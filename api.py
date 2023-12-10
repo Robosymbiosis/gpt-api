@@ -136,8 +136,8 @@ async def search(query: str):
     for file_name, line_number, similarity in top_5:
         surrounding_lines = get_surrounding_lines(file_name, line_number)
 
-        # Remove 'documentation_textfiles/' and replace path separators and file extension
-        url_suffix = file_name.replace("documentation_textfiles/", "").replace(".rst.txt", ".html")
+        # Remove 'godot_documentation/' and replace path separators and file extension
+        url_suffix = file_name.replace("godot_documentation/", "").replace(".rst.txt", ".html")
 
         formatted_result = {
             "link": base_url + url_suffix,
