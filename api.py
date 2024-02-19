@@ -3,21 +3,24 @@ import sqlite3
 import json
 import numpy as np
 import tiktoken
-from numpy.linalg import norm
 import nltk
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize
-import subprocess
 from collections import defaultdict
 import logging
+
+from utils import (
+    cosine_similarity,
+    count_word_occurrences,
+    get_surrounding_lines,
+    grep_search,
+    preprocess_to_ascii_words,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
 app = FastAPI(
-    servers=[{"url": "https://godot.robosymbiosis.com", "description": "Production server"}]
+    servers=[{"url": "https://api.robosymbiosis.com", "description": "Production server"}]
 )
 
 # Download necessary NLTK data
@@ -27,54 +30,9 @@ nltk.download("punkt")
 
 document_limit = 5
 
-# Initialize NLTK tools
-lemmatizer = WordNetLemmatizer()
 
 # Initialize tiktoken
 encoding = tiktoken.get_encoding("cl100k_base")
-
-
-# Function to preprocess text into alphanumeric ASCII words
-def preprocess_to_ascii_words(text):
-    tokens = word_tokenize(text.lower())
-    tokens = [token for token in tokens if token not in stopwords.words("english")]
-    tokens = [lemmatizer.lemmatize(token) for token in tokens]
-    return [token for token in tokens if token.isalnum()]
-
-
-# Function to execute grep search
-def grep_search(word, directory="godot_documentation"):
-    cmd = ["grep", "-rH", "--include=*.txt", word, directory]
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
-    return result.stdout
-
-
-# Function to get surrounding lines
-def get_surrounding_lines(file_path, line_number, context=20):
-    try:
-        with open(file_path, "r", encoding="utf-8") as file:
-            lines = file.readlines()
-        start = max(line_number - context - 1, 0)
-        end = min(line_number + context, len(lines))
-        return lines[start:end]
-    except FileNotFoundError:
-        return ["Error: File not found."]
-
-
-# Function to calculate cosine similarity
-def cosine_similarity(vec_a, vec_b):
-    if norm(vec_a) == 0 or norm(vec_b) == 0:
-        return 0
-    if len(vec_a) > len(vec_b):
-        vec_b = np.pad(vec_b, (0, len(vec_a) - len(vec_b)))
-    elif len(vec_b) > len(vec_a):
-        vec_a = np.pad(vec_a, (0, len(vec_b) - len(vec_a)))
-    return np.dot(vec_a, vec_b) / (norm(vec_a) * norm(vec_b))
-
-
-# Function to count word occurrences in a line
-def count_word_occurrences(word, line):
-    return line.lower().count(word.lower())
 
 
 @app.get("/godot_search/")
@@ -105,7 +63,7 @@ async def search(query: str):
     sorted_docs = sorted(match_counts.items(), key=lambda x: x[1], reverse=True)[:document_limit]
 
     # Connect to SQLite Database for similarity search
-    conn = sqlite3.connect("godot_documentation_embeds.db")
+    conn = sqlite3.connect("encoders/godot/godot_documentation_embeds.db")
     cursor = conn.cursor()
 
     # Preprocess and then embed the query for similarity comparison
@@ -114,6 +72,7 @@ async def search(query: str):
     # Calculate similarity for top-ranked documents
     similarities = []
     for file_name, _ in sorted_docs:
+        file_name = file_name.replace("encoders/godot/", "")
         cursor.execute(
             "SELECT line_number, tokens FROM text_embeddings WHERE file_name = ?", (file_name,)
         )
@@ -134,10 +93,13 @@ async def search(query: str):
 
     formatted_results = []
     for file_name, line_number, similarity in top_5:
+        file_name = "encoders/godot/" + file_name
         surrounding_lines = get_surrounding_lines(file_name, line_number)
 
         # Remove 'godot_documentation/' and replace path separators and file extension
-        url_suffix = file_name.replace("godot_documentation/", "").replace(".rst.txt", ".html")
+        url_suffix = file_name.replace("encoders/godot/godot_documentation/", "").replace(
+            ".rst.txt", ".html"
+        )
 
         formatted_result = {
             "link": base_url + url_suffix,
