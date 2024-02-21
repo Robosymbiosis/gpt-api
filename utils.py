@@ -123,6 +123,8 @@ def format_search_results(
     formatted_results = []
     if database == "odoo":
         base_url = "https://www.odoo.com/documentation/17.0/"
+    elif database == "fusion":
+        base_url = "https://help.autodesk.com/view/fusion360/ENU/?guid="
     else:  # Default to Godot
         base_url = f"https://docs.{database}engine.org/en/stable/"
 
@@ -133,6 +135,8 @@ def format_search_results(
             url_suffix = file_name.replace(
                 f"encoders/{database}/{database}_documentation/", ""
             ).replace(".rst.txt", ".html")
+        elif database == "fusion":
+            url_suffix = file_name.split(" - ")[0].split("/")[-1]
         elif database == "odoo":
             # Odoo-specific transformation if needed
             url_suffix = file_name.replace(

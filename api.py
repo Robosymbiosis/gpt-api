@@ -44,7 +44,7 @@ async def search(database: str, query: str) -> List[Dict[str, Any]]:
     Returns:
         List[Dict[str, Any]]: The search results.
     """
-    if database not in ["godot", "odoo"]:
+    if database not in ["godot", "odoo", "fusion"]:
         raise HTTPException(status_code=404, detail="Database not found")
 
     words = preprocess_to_ascii_words(query)
