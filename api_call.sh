@@ -1,10 +1,19 @@
 #!/bin/bash
 
-# Query string variable
-query_string="What signals does VideoStreamPlayer have?"
+# Define the endpoint URL for localhost
+# Assuming FastAPI runs on the default port 8000
+ENDPOINT_URL="http://127.0.0.1:8000/search/"
 
-# URL encode the query string
-encoded_query=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$query_string'''))")
+# Specify the database and query parameters
+DATABASE="fusion"  # Example database
+QUERY="Can you show me an example of parameterizing a sketch with the API?"  # Example query
 
-# Perform the curl request and process the response with jq
-curl -X 'GET' "http://127.0.0.1:8000/godot_search/?query=$encoded_query" -H 'accept: application/json' | jq -r '.[] | @text'
+# URL encode the query
+# This is a simple way to handle spaces in queries, but might not handle all special characters.
+ENCODED_QUERY=$(echo $QUERY | sed 's/ /%20/g')
+
+# Construct the full URL with parameters
+FULL_URL="${ENDPOINT_URL}?database=${DATABASE}&query=${ENCODED_QUERY}"
+
+# Use curl to perform the GET request
+curl "$FULL_URL"
