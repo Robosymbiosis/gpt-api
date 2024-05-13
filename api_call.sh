@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Specify the database (godot or odoo)
-database="fusion" # Change to "godot" if you want to query the Godot documentation
+# Specify the database (godot, odoo, or fusion)
+database="odoo"
 
 # Query string variable
 query_string="how do I add a a product via the API?"
