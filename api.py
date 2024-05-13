@@ -7,10 +7,7 @@ from typing import List
 import nltk
 from fastapi import FastAPI
 from fastapi import HTTPException
-from fastapi import Query
 
-from schemas import SearchRequest
-from schemas import SearchResponse
 from utils import calculate_similarities
 from utils import format_search_results
 from utils import perform_text_search
@@ -32,17 +29,13 @@ nltk.download("punkt")
 document_limit = 5
 
 
-@app.get("/search/", response_model=SearchResponse)
-async def search(
-    database: str = Query(
-        ..., description="The name of the database to search in (godot, odoo, fusion)"
-    ),
-    query: str = Query(..., description="The query to search for"),
-) -> SearchResponse:
+# Refactored search function
+@app.get("/{database}_search/")
+async def search(database: str, query: str) -> List[Dict[str, Any]]:
     """Search for a query in the specified database.
 
     Args:
-        database (str): The name of the database to search in (godot, odoo, fusion).
+        database (str): The name of the database to search in.
         query (str): The query to search for.
 
     Raises:
@@ -51,7 +44,6 @@ async def search(
     Returns:
         List[Dict[str, Any]]: The search results.
     """
-    print("Request received: ", database)
     if database not in ["godot", "odoo", "fusion"]:
         raise HTTPException(status_code=404, detail="Database not found")
 
@@ -60,7 +52,7 @@ async def search(
     sorted_docs = sorted(match_counts.items(), key=lambda x: x[1], reverse=True)[:document_limit]
     similarities = calculate_similarities(sorted_docs, words, database)
 
-    similarities.sort(key=lambda x: x[1], reverse=True)
+    similarities.sort(key=lambda x: x[2], reverse=True)
     top_5 = similarities[:document_limit]
 
     formatted_results = format_search_results(top_5, database)

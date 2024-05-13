@@ -14,24 +14,20 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from numpy.linalg import norm
-from pydantic import ValidationError
 from tiktoken.core import Encoding
-
-from schemas import SearchResponse
-from schemas import SearchResultItem
 
 lemmatizer = WordNetLemmatizer()
 encoding = tiktoken.get_encoding("cl100k_base")
 
 
-def preprocess_to_ascii_words(text: str) -> List[str]:
+def preprocess_to_ascii_words(text: str) -> list[str]:
     """Preprocess text into alphanumeric ASCII words.
 
     Args:
         text (str): The text to preprocess.
 
     Returns:
-        List[str]: The preprocessed words.
+        list[str]: The preprocessed words.
     """
     tokens = word_tokenize(text.lower())
     tokens = [token for token in tokens if token not in stopwords.words("english")]
@@ -59,7 +55,7 @@ def grep_search(word: str, directory: str = "") -> str:
     return result.stdout
 
 
-def get_surrounding_lines(file_path: str, line_number: int, context=20) -> List[str]:
+def get_surrounding_lines(file_path: str, line_number: int, context=20) -> list[str]:
     """Get surrounding lines of a line in a file.
 
     Args:
@@ -68,7 +64,7 @@ def get_surrounding_lines(file_path: str, line_number: int, context=20) -> List[
         context (int): Gets the surrounding lines before and after the specified line number. Defaults to 20.
 
     Returns:
-        List[str]: The surrounding lines.
+        list[str]: The surrounding lines.
     """
     try:
         with open(file_path, "r", encoding="utf-8") as file:
@@ -118,13 +114,13 @@ def format_search_results(
     """Sort all the search results and format them for the API response.
 
     Args:
-        similarities (List[Tuple[str, int, float]]): A List of the top similar search results.
+        similarities (List[Tuple[str, int, float]]): A list of the top similar search results.
         database (str): The name of the database.
 
     Returns:
         List[Dict[str, Any]]: The formatted search results.
     """
-    formatted_results = SearchResponse()
+    formatted_results = []
     if database == "odoo":
         base_url = "https://www.odoo.com/documentation/17.0/"
     elif database == "fusion":
@@ -146,12 +142,13 @@ def format_search_results(
             url_suffix = file_name.replace(
                 f"encoders/{database}/{database}_documentation/", ""
             ).replace(".rst", ".html")
-        formatted_result = SearchResultItem(
-            url_link=base_url + url_suffix,
-            similarity=similarity,
-            context="".join(surrounding_lines),
-        )
-        formatted_results.results.append(formatted_result)
+        formatted_result = {
+            "link": base_url + url_suffix,
+            "line_number": line_number,
+            "similarity": similarity,
+            "context": "".join(surrounding_lines),
+        }
+        formatted_results.append(formatted_result)
     return formatted_results
 
 
@@ -188,12 +185,12 @@ def calculate_similarities(
     """Calculate the similarities between the search query and the database entries.
 
     Args:
-        sorted_docs (List[Tuple[str, float]]): The sorted List of documents and their match counts.
+        sorted_docs (List[Tuple[str, float]]): The sorted list of documents and their match counts.
         words (List[str]): The words to search for.
         database (str): The name of the database.
 
     Returns:
-        List[Tuple[str, int, float]]: The List of similarities.
+        List[Tuple[str, int, float]]: The list of similarities.
     """
     db_path = f"encoders/{database}/{database}_documentation_embeds.db"
     conn = sqlite3.connect(db_path)

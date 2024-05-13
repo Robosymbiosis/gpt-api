@@ -1,19 +1,13 @@
 #!/bin/bash
 
-# Define the endpoint URL for localhost
-# Assuming FastAPI runs on the default port 8000
-ENDPOINT_URL="http://127.0.0.1:8000/search/"
+# Specify the database (godot or odoo)
+database="fusion" # Change to "godot" if you want to query the Godot documentation
 
-# Specify the database and query parameters
-DATABASE="fusion"  # Example database
-QUERY="Can you show me an example of parameterizing a sketch with the API?"  # Example query
+# Query string variable
+query_string="how do I add a a product via the API?"
 
-# URL encode the query
-# This is a simple way to handle spaces in queries, but might not handle all special characters.
-ENCODED_QUERY=$(echo $QUERY | sed 's/ /%20/g')
+# URL encode the query string
+encoded_query=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$query_string'''))")
 
-# Construct the full URL with parameters
-FULL_URL="${ENDPOINT_URL}?database=${DATABASE}&query=${ENCODED_QUERY}"
-
-# Use curl to perform the GET request
-curl "$FULL_URL"
+# Perform the curl request and process the response with jq
+curl -X 'GET' "http://127.0.0.1:8000/${database}_search/?query=$encoded_query" -H 'accept: application/json' | jq -r '.[] | @text'

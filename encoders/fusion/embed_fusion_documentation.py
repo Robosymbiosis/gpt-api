@@ -1,4 +1,5 @@
 """Fusion Documentation Embedding Script."""
+
 import json
 import pathlib
 import sqlite3
