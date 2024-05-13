@@ -1,3 +1,5 @@
 # robosymbiosis-api
 
-Run with `uvicorn api:app --host 0.0.0.0 --port 8000`
+Run with `make inference`
+
+Retrieve RAG queries with `./api_call.sh`
